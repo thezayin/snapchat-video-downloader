@@ -11,11 +11,11 @@ import java.util.Stack
 class GoogleRewarded(context: Context?) {
     private val totalLevels = 4
     private var adUnits: ArrayList<ArrayList<Any>>? = null
-    private val reward5 = "ca-app-pub-9507635869843997/2420894293"
-    private val reward4 = "ca-app-pub-9507635869843997/4344350059"
-    private val rewardHigh = "ca-app-pub-9507635869843997/1307123172"
-    private val rewardMed = "ca-app-pub-9507635869843997/9596676735"
-    private val rewardAll = "ca-app-pub-9507635869843997/5845133985"
+    private val reward5 = "ca-app-pub-9507635869843997/1313904170"
+    private val reward4 = "ca-app-pub-9507635869843997/8345699462"
+    private val rewardHigh = "ca-app-pub-9507635869843997/3561056899"
+    private val rewardMed = "ca-app-pub-9507635869843997/1909063878"
+    private val rewardAll = "ca-app-pub-9507635869843997/3940067519"
 
     init {
         instantiateList()

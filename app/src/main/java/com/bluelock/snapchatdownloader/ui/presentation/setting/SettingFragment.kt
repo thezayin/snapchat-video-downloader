@@ -66,7 +66,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     showInterstitialAd { }
                     val intent = Intent(
                         Intent.ACTION_VIEW,
-                        Uri.parse("https://bluelocksolutions.blogspot.com/p/terms-and-conditions-for-instagram.html")
+                        Uri.parse("https://bluelocksolutions.blogspot.com/2023/07/terms-and-conditions-for-snap-video.html")
                     )
                     startActivity(intent)
                 }
@@ -74,7 +74,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     showInterstitialAd { }
                     val intent = Intent(
                         Intent.ACTION_VIEW,
-                        Uri.parse("https://bluelocksolutions.blogspot.com/p/privacy-policy-for-instagram-downloader.html")
+                        Uri.parse("https://bluelocksolutions.blogspot.com/2023/07/privacy-policy-for-snap-video-downloader.html")
                     )
                     startActivity(intent)
                 }
@@ -84,7 +84,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                         Intent.ACTION_SENDTO,
                         Uri.parse("mailto:blue.lock.testing@gmail.com")
                     )
-                    emailIntent.putExtra(Intent.EXTRA_SUBJECT, "FB Reel Downloader")
+                    emailIntent.putExtra(Intent.EXTRA_SUBJECT, "SnapChat Downloader")
                     emailIntent.putExtra(Intent.EXTRA_TEXT, "your message here")
                     startActivity(Intent.createChooser(emailIntent, "Chooser Title"))
                 }
@@ -188,7 +188,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     if (remoteConfig.nativeAd) {
                         showNativeAd()
                     }
-                    delay(250L)
+                    delay(30000L)
                     showInterstitialAd {  }
                 }
             }

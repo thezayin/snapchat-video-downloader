@@ -10,11 +10,11 @@ import java.util.Stack
 class GoogleAppOpen(context: Context?) {
     private val totalLevels = 4
     private var adUnits: ArrayList<ArrayList<Any>>? = null
-    private val appOpen5 = "ca-app-pub-9507635869843997/8174686375"
-    private val appOpen4 = "ca-app-pub-9507635869843997/9487768045"
-    private val appOpenHigh = "ca-app-pub-9507635869843997/4618584749"
-    private val appOpenMed = "ca-app-pub-9507635869843997/7053176397"
-    private val appOpenAll = "ca-app-pub-9507635869843997/1916399782"
+    private val appOpen5 = "ca-app-pub-9507635869843997/7348324907"
+    private val appOpen4 = "ca-app-pub-9507635869843997/2503192334"
+    private val appOpenHigh = "ca-app-pub-9507635869843997/6418386614"
+    private val appOpenMed = "ca-app-pub-9507635869843997/6226814923"
+    private val appOpenAll = "ca-app-pub-9507635869843997/2287569917"
 
     init {
         instantiateList()

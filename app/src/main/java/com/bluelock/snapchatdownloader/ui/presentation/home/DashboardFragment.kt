@@ -812,7 +812,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
                     if (remoteConfig.nativeAd) {
                         showNativeAd()
                     }
-                    delay(250L)
+                    delay(5000L)
                 }
             }
         }

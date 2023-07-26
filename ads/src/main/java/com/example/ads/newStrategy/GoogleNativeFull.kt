@@ -15,11 +15,11 @@ import java.util.Stack
 class GoogleNativeFull(context: Context?) {
     private val totalLevels = 4
     private var adUnits: ArrayList<ArrayList<Any>>? = null
-    private val native5 = "ca-app-pub-9507635869843997/8809111197"
-    private val native4 = "ca-app-pub-9507635869843997/4267230957"
-    private val nativeHigh = "ca-app-pub-9507635869843997/9129826771"
-    private val nativeMed = "ca-app-pub-9507635869843997/3182531373"
-    private val nativeAll = "ca-app-pub-9507635869843997/5190581766"
+    private val native5 = "ca-app-pub-9507635869843997/2454827542"
+    private val native4 = "ca-app-pub-9507635869843997/8785529659"
+    private val nativeHigh = "ca-app-pub-9507635869843997/2646399233"
+    private val nativeMed = "ca-app-pub-9507635869843997/9280353671"
+    private val nativeAll = "ca-app-pub-9507635869843997/2714945323"
 
     init {
         instantiateList()
