@@ -44,14 +44,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     override val bindingInflater: (LayoutInflater, ViewGroup?, Boolean) -> FragmentDownloadedBinding =
         FragmentDownloadedBinding::inflate
 
-    override fun onCreatedView() {
-        initRecyclerView()
 
-        lifecycleScope.launch(Dispatchers.Main) { refreshFiles() }
-        showRecursiveAds()
-        showDropDown()
-        initView()
-    }
 
     @Inject
     lateinit var googleManager: GoogleManager
@@ -68,6 +61,18 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     private var fileList: ArrayList<File> = ArrayList()
     private lateinit var myAdapter: MyAdapter
 
+
+    override fun onCreatedView() {
+        initRecyclerView()
+
+        lifecycleScope.launch(Dispatchers.Main) { refreshFiles() }
+        showRecursiveAds()
+        if (remoteConfig.nativeAd) {
+            showDropDown()
+        }
+        initView()
+    }
+
     private fun initView() {
         binding.apply {
             btnBack.setOnClickListener {
@@ -77,6 +82,8 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
             }
         }
     }
+
+
 
     private fun initRecyclerView() {
 
@@ -172,6 +179,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     private fun showInterstitialAd(callback: () -> Unit) {
         if (remoteConfig.showInterstitial) {
+            Log.d("remoteconfig_inter",remoteConfig.showInterstitial.toString())
             val ad: InterstitialAd? =
                 googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 

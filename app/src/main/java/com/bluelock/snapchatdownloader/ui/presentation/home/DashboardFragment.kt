@@ -113,7 +113,10 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
 
     override fun onCreatedView() {
         showDownloadingDialog()
-        showDropDown()
+        if (remoteConfig.nativeAd) {
+            showDropDown()
+            Log.d("remoteconfig_dasj",remoteConfig.nativeAd.toString())
+        }
         showNativeAd()
         activity = requireActivity()
         onCreateIsCalled = true
@@ -137,8 +140,6 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         )
 
         showConsent()
-
-        showDropDown()
 
         initViews()
         handleIntent()
@@ -395,28 +396,31 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
     }
 
     private fun showInterstitialAd(callback: () -> Unit) {
+        if (remoteConfig.showInterstitial) {
+            Log.d("remoteconfig_inter",remoteConfig.showInterstitial.toString())
+            val ad: InterstitialAd? =
+                googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 
-        val ad: InterstitialAd? =
-            googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
+            if (ad == null) {
+                callback.invoke()
+                return
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        super.onAdDismissedFullScreenContent()
+                        callback.invoke()
+                    }
 
-        if (ad == null) {
-            callback.invoke()
-            return
-        } else {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    super.onAdDismissedFullScreenContent()
-                    callback.invoke()
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
+                        callback.invoke()
+                    }
                 }
-
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    super.onAdFailedToShowFullScreenContent(error)
-                    callback.invoke()
-                }
+                ad.show(requireActivity())
             }
-            ad.show(requireActivity())
+        } else {
+            callback.invoke()
         }
-
     }
 
     private fun showDropDown() {
@@ -773,6 +777,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
 
     private fun showRewardedAd(callback: () -> Unit) {
         if (remoteConfig.showInterstitial) {
+
             if (!requireActivity().isConnected()) {
                 callback.invoke()
                 return

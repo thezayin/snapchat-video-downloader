@@ -49,7 +49,9 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
 
         observer()
         showRecursiveAds()
-        showDropDown()
+        if (remoteConfig.nativeAd) {
+            showDropDown()
+        }
 
     }
 
@@ -189,7 +191,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                         showNativeAd()
                     }
                     delay(30000L)
-                    showInterstitialAd {  }
+                    showInterstitialAd { }
                 }
             }
         }
