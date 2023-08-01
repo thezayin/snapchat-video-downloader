@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Snapcha Downloader</string>
+    <string name="app_name">Snap Downloader</string>
 
     <!--api links-->
     <string name="download_started">Download Started</string>
