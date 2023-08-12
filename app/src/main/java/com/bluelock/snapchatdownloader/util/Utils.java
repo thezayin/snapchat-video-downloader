@@ -4,6 +4,7 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.Context.DOWNLOAD_SERVICE;
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -29,8 +30,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.io.File;
 import java.net.URLConnection;
+import java.util.Objects;
 
 
+@SuppressWarnings({"RegExpRedundantEscape", "ResultOfMethodCallIgnored"})
 public class Utils {
     private static final String TAG = "Utils";
     private static final String SNAPCHAT_REGEX = "^https:\\/\\/t\\.snapchat\\.com\\/[a-zA-Z0-9]+$";
@@ -39,10 +42,8 @@ public class Utils {
     public static String RootDirectorySnapchat = "/Smart_Downloader/snapchat/";
 
     public static File RootDirectorySnapchatShow = new File(Environment.getExternalStorageDirectory() + "/Download" + RootDirectorySnapchat);
-    private final Context context;
 
-    public Utils(Context mContext) {
-        context = mContext;
+    public Utils() {
     }
 
     public static void setToast(Context mContext, String str) {
@@ -66,7 +67,7 @@ public class Utils {
         }
         customDialog = new BottomSheetDialog(activity, R.style.SheetDialog);
         LayoutInflater inflater = LayoutInflater.from(activity);
-        View mView = inflater.inflate(R.layout.layout_progress_dialog, null);
+        @SuppressLint("InflateParams") View mView = inflater.inflate(R.layout.layout_progress_dialog, null);
         customDialog.setCancelable(false);
         customDialog.setContentView(mView);
         if (!customDialog.isShowing() && !activity.isFinishing()) {
@@ -74,14 +75,14 @@ public class Utils {
         }
     }
 
-    public static void hideProgressDialog(Activity activity) {
+    public static void hideProgressDialog() {
         System.out.println("Hide");
         if (customDialog != null && customDialog.isShowing()) {
             customDialog.dismiss();
         }
     }
 
-    public static FVideo startDownload(Context context, String videoUrl, int urlType) {
+    public static FVideo startDownload(Context context, String videoUrl) {
 
 
         int result = ContextCompat.checkSelfPermission(context, WRITE_EXTERNAL_STORAGE);
@@ -119,11 +120,7 @@ public class Utils {
 
         try {
             MediaScannerConnection.scanFile(context, new String[]{new File(DIRECTORY_DOWNLOADS + "/" + fileName).getAbsolutePath()},
-                    null, new MediaScannerConnection.OnScanCompletedListener() {
-                        public void onScanCompleted(String path, Uri uri) {
-                            Log.d("videoProcess", "onScanCompleted: " + path);
-                        }
-                    });
+                    null, (path, uri1) -> Log.d("videoProcess", "onScanCompleted: " + path));
 
 
         } catch (Exception e) {
@@ -146,7 +143,7 @@ public class Utils {
     public static void deleteVideoFromFile(Context context, FVideo video) {
         if (video.getState() == FVideo.COMPLETE) {
 
-            File file = new File(video.getFileUri());
+            File file = new File(Objects.requireNonNull(video.getFileUri()));
             Database db = Database.init(context);
 
             if (file.exists()) {
