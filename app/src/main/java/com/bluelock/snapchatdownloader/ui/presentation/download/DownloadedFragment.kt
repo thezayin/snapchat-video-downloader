@@ -2,6 +2,7 @@ package com.bluelock.snapchatdownloader.ui.presentation.download
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -68,6 +69,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
         lifecycleScope.launch(Dispatchers.Main) { refreshFiles() }
 
         if (remoteConfig.nativeAd) {
+            Log.d("jeje_naive",remoteConfig.nativeAd.toString())
             showRecursiveAds()
             showNativeAd()
         }
