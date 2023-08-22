@@ -1,6 +1,7 @@
 package com.bluelock.snapchatdownloader.ui.presentation.home
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
@@ -41,7 +42,6 @@ import com.bluelock.snapchatdownloader.models.FVideo
 import com.bluelock.snapchatdownloader.models.SnapVideo
 import com.bluelock.snapchatdownloader.remote.RemoteConfig
 import com.bluelock.snapchatdownloader.ui.presentation.base.BaseFragment
-import com.bluelock.snapchatdownloader.util.Constants.FACEBOOK_URL
 import com.bluelock.snapchatdownloader.util.Constants.SNAPCHAT_URL
 import com.bluelock.snapchatdownloader.util.Constants.downloadVideos
 import com.bluelock.snapchatdownloader.util.Utils
@@ -111,12 +111,9 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
     private lateinit var csForm: ConsentForm
 
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreatedView() {
-        showDownloadingDialog()
-        if (remoteConfig.nativeAd) {
-            showDropDown()
-        }
-        showNativeAd()
+
         activity = requireActivity()
         onCreateIsCalled = true
         checkPermission()
@@ -139,8 +136,13 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         initViews()
         handleIntent()
         observe()
-        showRecursiveAds()
-        onClick()
+        showDownloadingDialog()
+
+        if (remoteConfig.nativeAd) {
+            showNativeAd()
+            showRecursiveAds()
+        }
+
 
     }
 
@@ -247,14 +249,6 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
 
     private fun observe() {
         binding.apply {
-
-
-            btnSetting.setOnClickListener {
-                showRewardedAd {}
-                val action = DashboardFragmentDirections.actionDashboardFragmentToSettingFragment()
-                findNavController().navigate(action)
-            }
-
             linkEt.addTextChangedListener(object : TextWatcher {
                 override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                     if (s.toString().trim { it <= ' ' }.isEmpty()) {
@@ -280,12 +274,23 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             })
 
             ivCross.setOnClickListener {
-                showRewardedAd {}
+                showInterstitialAd {}
                 linkEt.text = null
             }
 
+            btnSetting.setOnClickListener {
+                val action = DashboardFragmentDirections.actionDashboardFragmentToSettingFragment()
+                findNavController().navigate(action)
+            }
+
+            btnDownloaded.setOnClickListener {
+                val action =
+                    DashboardFragmentDirections.actionDashboardFragmentToDownloadedFragment()
+                findNavController().navigate(action)
+            }
+
             btnDownload.setOnClickListener {
-                showInterstitialAd {  }
+                showInterstitialAd { }
                 val ll = linkEt.text.toString().trim { it <= ' ' }
                 analytics.logEvent(
                     AnalyticsEvent.LINK(
@@ -346,7 +351,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
                         requireActivity()
                     ) {
                         if (consentInformation.consentStatus == ConsentInformation.ConsentStatus.OBTAINED) {
-                            //nothing here
+                            Log.d("jeje", "consent")
                         }
                         loadForm()
                     }
@@ -358,77 +363,174 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         )
     }
 
-    //Ads Views
-    private fun showNativeAd() {
-        if (remoteConfig.nativeAd) {
-            nativeAd = googleManager.createNativeAdSmall()
-            nativeAd?.let {
-                val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
-                nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
-                binding.nativeView.removeAllViews()
-                binding.nativeView.addView(nativeAdLayoutBinding.root)
-                binding.nativeView.visibility = View.VISIBLE
-            }
-        }
-    }
-
-
-
-    private fun showDropDown() {
-        val nativeAdCheck = googleManager.createNativeFull()
-        nativeAdCheck?.let {
-            binding.apply {
-                dropLayout.bringToFront()
-                nativeViewDrop.bringToFront()
-            }
-            val nativeAdLayoutBinding = MediumNativeAdLayoutBinding.inflate(layoutInflater)
-            nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
-            binding.nativeViewDrop.removeAllViews()
-            binding.nativeViewDrop.addView(nativeAdLayoutBinding.root)
-            binding.nativeViewDrop.visibility = View.VISIBLE
-            binding.dropLayout.visibility = View.VISIBLE
-
-            binding.btnDropDown.setOnClickListener {
-                binding.dropLayout.visibility = View.GONE
-            }
-            binding.btnDropUp.visibility = View.INVISIBLE
-        }
-    }
-
-    private fun onClick() {
+    private fun getSnapchatData() {
         binding.apply {
-            btnDownloaded.setOnClickListener {
-                showRewardedAd {}
-                val action =
-                    DashboardFragmentDirections.actionDashboardFragmentToDownloadedFragment()
-                findNavController().navigate(action)
-            }
+            createSnapchatFolder()
+            Utils.showProgressDialog(requireActivity())
 
-            btnDownload.setOnClickListener {
-                val ll = linkEt.text.toString().trim { it <= ' ' }
-                if (ll == "") {
-                    Utils.setToast(
-                        requireActivity(),
-                        resources.getString(R.string.enter_url)
-                    )
-                } else if (!Patterns.WEB_URL.matcher(ll).matches()) {
-                    Utils.setToast(
-                        requireActivity(),
-                        resources.getString(R.string.enter_valid_url)
-                    )
-                } else {
-                    if (urlType == 0) {
-                        urlType = SNAPCHAT_URL
-                    }
-                    when (urlType) {
-
-                        SNAPCHAT_URL -> {
-                            getSnapchatData()
+            val videoLink: String = linkEt.text.toString().trim { it <= ' ' }
+            val video: Call<SnapVideo?> = downloadAPIInterface!!.getSnapVideos(videoLink)!!
+            video.enqueue(object : Callback<SnapVideo?> {
+                override fun onResponse(call: Call<SnapVideo?>, response: Response<SnapVideo?>) {
+                    Utils.hideProgressDialog()
+                    if (response.isSuccessful) {
+                        val snapVideo: SnapVideo? = response.body()
+                        if (snapVideo == null) {
+                            showStartDownloadDialogR("")
+                            return
+                        }
+                        if (!snapVideo.error) {
+                            val data: SnapVideo.Data = snapVideo.data!!
+                            showStartDownloadDialogR(data.url)
+                        } else {
+                            showStartDownloadDialogR("")
                         }
                     }
+                }
+
+                override fun onFailure(call: Call<SnapVideo?>, t: Throwable) {
+                    Utils.hideProgressDialog()
+                    showStartDownloadDialogR("")
+                }
+            })
+        }
+    }
+
+    private fun updateListData() {
+        binding.apply {
+            videos = db?.recentVideos
+        }
+    }
+
+    private fun handleIntent() {
+        val intent = requireActivity().intent
+
+        if (intent == null || intent.action == null) {
+            return
+        }
+        if (intent.action == Intent.ACTION_SEND && intent.type != null) {
+            if (intent.type == "text/plain") {
+                onCreateIsCalled = false
+            }
+        }
+    }
+
+    private val downloadComplete: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            downloadingDialog.dismiss()
+            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            if (downloadVideos.containsKey(id)) {
+                val fVideo: FVideo? = db?.getVideo(id)
+                val videoPath: String = Environment.getExternalStorageDirectory()
+                    .toString() + "/Download" + Utils.RootDirectorySnapchat + fVideo?.fileName
+
+                val dialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
+                dialog.setContentView(R.layout.dialog_download_success)
+                val btnOk = dialog.findViewById<Button>(R.id.btn_done)
+                val btnClose = dialog.findViewById<ImageView>(R.id.ivCross)
+                val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewAdSuccess)
+                dialog.behavior.isDraggable = false
+                dialog.setCanceledOnTouchOutside(false)
+                if (showNatAd()) {
+                    nativeAd = googleManager.createNativeAdSmall()
+                    nativeAd?.let {
+                        val nativeAdLayoutBinding =
+                            NativeAdBannerLayoutBinding.inflate(layoutInflater)
+                        nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
+                        adView?.removeAllViews()
+                        adView?.addView(nativeAdLayoutBinding.root)
+                        adView?.visibility = View.VISIBLE
+                    }
+                }
+
+                btnOk?.setOnClickListener {
+                    showInterstitialAd {}
+                    dialog.dismiss()
 
                 }
+                btnClose?.setOnClickListener {
+                    showInterstitialAd {}
+                    dialog.dismiss()
+                }
+
+                dialog.show()
+                db?.updateState(id, FVideo.COMPLETE)
+                db?.setUri(id, videoPath)
             }
+        }
+    }
+
+    private fun showStartDownloadDialogR(link: String?) {
+        try {
+            if (link == null || link == "") {
+                val dialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
+                dialog.setContentView(R.layout.dialog_bottom_video_not_found_)
+                val btnOk = dialog.findViewById<Button>(R.id.btn_close)
+                val btnCancel = dialog.findViewById<ImageView>(R.id.ivCross)
+                val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewNot)
+                if (remoteConfig.nativeAd) {
+                    nativeAd = googleManager.createNativeAdSmall()
+                    nativeAd?.let {
+                        val nativeAdLayoutBinding =
+                            NativeAdBannerLayoutBinding.inflate(layoutInflater)
+                        nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
+                        adView?.removeAllViews()
+                        adView?.addView(nativeAdLayoutBinding.root)
+                        adView?.visibility = View.VISIBLE
+                    }
+                }
+
+                dialog.behavior.isDraggable = false
+                dialog.setCanceledOnTouchOutside(false)
+
+                btnOk?.setOnClickListener {
+                    showInterstitialAd {}
+                    dialog.dismiss()
+
+                }
+                btnCancel?.setOnClickListener {
+                    showInterstitialAd { }
+                    dialog.dismiss()
+                }
+                dialog.show()
+                return
+            }
+            lifecycleScope.launch {
+                val dialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
+                dialog.setContentView(R.layout.dialog_bottom_start_download)
+                val btnDownload = dialog.findViewById<Button>(R.id.btn_download)
+                val btnClose = dialog.findViewById<ImageView>(R.id.ivCross)
+                val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewAdDownload)
+                if (remoteConfig.nativeAd) {
+                    nativeAd = googleManager.createNativeAdSmall()
+                    nativeAd?.let {
+                        val nativeAdLayoutBinding =
+                            NativeAdBannerLayoutBinding.inflate(layoutInflater)
+                        nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
+                        adView?.removeAllViews()
+                        adView?.addView(nativeAdLayoutBinding.root)
+                        adView?.visibility = View.VISIBLE
+                    }
+                }
+
+                dialog.behavior.isDraggable = false
+                dialog.setCanceledOnTouchOutside(false)
+                btnDownload?.setOnClickListener {
+                    showRewardedAd { }
+                    videoDownloadR(link)
+                    dialog.dismiss()
+                    downloadingDialog.show()
+
+                }
+                btnClose?.setOnClickListener {
+                    showInterstitialAd { }
+                    dialog.dismiss()
+                }
+                dialog.show()
+            }
+        } catch (e: NullPointerException) {
+            e.printStackTrace()
+            Toast.makeText(requireActivity(), "Video Not Found", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -486,181 +588,8 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
                         "OK",
                         "Cancel"
                     )
-                }.request { _, _, _ -> /*if (allGranted) {
-                                        Toast.makeText(MainActivity.this, "All permissions are granted", Toast.LENGTH_LONG).show();
-                                    } else {
-                                        Toast.makeText(MainActivity.this, "These permissions are denied: $deniedList", Toast.LENGTH_LONG).show();
-                                    }*/
+                }.request { _, _, _ ->
                 }
-        }
-    }
-
-    private fun getSnapchatData() {
-        binding.apply {
-            createSnapchatFolder()
-            Utils.showProgressDialog(requireActivity())
-
-            val videoLink: String = linkEt.text.toString().trim { it <= ' ' }
-            val video: Call<SnapVideo?> = downloadAPIInterface!!.getSnapVideos(videoLink)!!
-            video.enqueue(object : Callback<SnapVideo?> {
-                override fun onResponse(call: Call<SnapVideo?>, response: Response<SnapVideo?>) {
-                    Utils.hideProgressDialog()
-                    if (response.isSuccessful) {
-                        val snapVideo: SnapVideo? = response.body()
-                        if (snapVideo == null) {
-                            showStartDownloadDialogR("", FACEBOOK_URL)
-                            return
-                        }
-                        if (!snapVideo.error) {
-                            val data: SnapVideo.Data = snapVideo.data!!
-                            showStartDownloadDialogR(data.url, SNAPCHAT_URL)
-                        } else {
-                            showStartDownloadDialogR("", SNAPCHAT_URL)
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<SnapVideo?>, t: Throwable) {
-                    Utils.hideProgressDialog()
-                    showStartDownloadDialogR("", SNAPCHAT_URL)
-                }
-            })
-        }
-    }
-
-    private fun updateListData() {
-        binding.apply {
-            videos = db?.recentVideos
-        }
-    }
-
-    private fun handleIntent() {
-        val intent = requireActivity().intent
-
-        if (intent == null || intent.action == null) {
-            return
-        }
-        if (intent.action == Intent.ACTION_SEND && intent.type != null) {
-            if (intent.type == "text/plain") {
-                onCreateIsCalled = false
-            }
-        }
-    }
-
-    private val downloadComplete: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            downloadingDialog.dismiss()
-            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            if (downloadVideos.containsKey(id)) {
-                val fVideo: FVideo? = db?.getVideo(id)
-                val videoPath: String = Environment.getExternalStorageDirectory()
-                    .toString() + "/Download" + Utils.RootDirectorySnapchat + fVideo?.fileName
-
-                val dialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
-                dialog.setContentView(R.layout.dialog_download_success)
-                val btnOk = dialog.findViewById<Button>(R.id.btn_clear)
-                val btnClose = dialog.findViewById<ImageView>(R.id.ivCross)
-                val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewAdSuccess)
-                dialog.behavior.isDraggable = false
-                dialog.setCanceledOnTouchOutside(false)
-                if (showNatAd()) {
-                    nativeAd = googleManager.createNativeAdSmall()
-                    nativeAd?.let {
-                        val nativeAdLayoutBinding =
-                            NativeAdBannerLayoutBinding.inflate(layoutInflater)
-                        nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
-                        adView?.removeAllViews()
-                        adView?.addView(nativeAdLayoutBinding.root)
-                        adView?.visibility = View.VISIBLE
-                    }
-                }
-
-                btnOk?.setOnClickListener {
-                    showInterstitialAd {}
-                    dialog.dismiss()
-
-                }
-                btnClose?.setOnClickListener {
-                    showRewardedAd {}
-                    dialog.dismiss()
-                }
-
-                dialog.show()
-                db?.updateState(id, FVideo.COMPLETE)
-                db?.setUri(id, videoPath)
-            }
-        }
-    }
-
-    private fun showStartDownloadDialogR(link: String?, urlType: Int) {
-        try {
-            if (link == null || link == "") {
-                val dialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
-                dialog.setContentView(R.layout.dialog_bottom_video_not_found_)
-                val btnOk = dialog.findViewById<Button>(R.id.btn_clear)
-
-                val btnCancel = dialog.findViewById<ImageView>(R.id.ivCross)
-                val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewNot)
-                if (remoteConfig.nativeAd) {
-                    nativeAd = googleManager.createNativeAdSmall()
-                    nativeAd?.let {
-                        val nativeAdLayoutBinding =
-                            NativeAdBannerLayoutBinding.inflate(layoutInflater)
-                        nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
-                        adView?.removeAllViews()
-                        adView?.addView(nativeAdLayoutBinding.root)
-                        adView?.visibility = View.VISIBLE
-                    }
-                }
-
-                dialog.behavior.isDraggable = false
-                dialog.setCanceledOnTouchOutside(false)
-
-                btnOk?.setOnClickListener {
-                    showRewardedAd {}
-                    dialog.dismiss()
-
-                }
-                btnCancel?.setOnClickListener {
-                    showInterstitialAd { }
-                    dialog.dismiss()
-                }
-                dialog.show()
-                return
-            }
-            lifecycleScope.launch {
-
-                val dialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
-                dialog.setContentView(R.layout.dialog_bottom_start_download)
-                val videoQualityTv = dialog.findViewById<Button>(R.id.btn_clear)
-                val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewAdDownload)
-                if (remoteConfig.nativeAd) {
-                    nativeAd = googleManager.createNativeAdSmall()
-                    nativeAd?.let {
-                        val nativeAdLayoutBinding =
-                            NativeAdBannerLayoutBinding.inflate(layoutInflater)
-                        nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
-                        adView?.removeAllViews()
-                        adView?.addView(nativeAdLayoutBinding.root)
-                        adView?.visibility = View.VISIBLE
-                    }
-                }
-
-                dialog.behavior.isDraggable = false
-                dialog.setCanceledOnTouchOutside(false)
-                videoQualityTv?.setOnClickListener {
-                    showRewardedAd { }
-                    videoDownloadR(link, urlType)
-                    dialog.dismiss()
-                    downloadingDialog.show()
-
-                }
-                dialog.show()
-            }
-
-        } catch (e: NullPointerException) {
-            e.printStackTrace()
-            Toast.makeText(requireActivity(), "Video Not Found", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -692,7 +621,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         }
     }
 
-    private fun videoDownloadR(videoUrl: String?, urlType: Int) {
+    private fun videoDownloadR(videoUrl: String?) {
         binding.apply {
             if (videoUrl == null || videoUrl == "") {
                 Toast.makeText(activity, "This video quality is not available", Toast.LENGTH_SHORT)
@@ -705,6 +634,31 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         }
 
     }
+
+    //Ads Views
+    private fun showRecursiveAds() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (this.isActive) {
+                    showNativeAd()
+                    showDropDown()
+                    delay(30000L)
+                }
+            }
+        }
+    }
+
+    private fun showNativeAd() {
+        nativeAd = googleManager.createNativeAdSmall()
+        nativeAd?.let {
+            val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
+            nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
+            binding.nativeView.removeAllViews()
+            binding.nativeView.addView(nativeAdLayoutBinding.root)
+            binding.nativeView.visibility = View.VISIBLE
+        }
+    }
+
     private fun showInterstitialAd(callback: () -> Unit) {
         if (remoteConfig.showInterstitial) {
             val ad: InterstitialAd? =
@@ -731,6 +685,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             callback.invoke()
         }
     }
+
     private fun showRewardedAd(callback: () -> Unit) {
         if (remoteConfig.showInterstitial) {
 
@@ -761,19 +716,27 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         }
     }
 
-    private fun showRecursiveAds() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                while (this.isActive) {
-                    showNativeAd()
-                    if (remoteConfig.nativeAd) {
-                        showNativeAd()
-                    }
-                    delay(5000L)
-                }
+    private fun showDropDown() {
+        val nativeAdCheck = googleManager.createNativeFull()
+        nativeAdCheck?.let {
+            binding.apply {
+                dropLayout.bringToFront()
+                nativeViewDrop.bringToFront()
             }
+            val nativeAdLayoutBinding = MediumNativeAdLayoutBinding.inflate(layoutInflater)
+            nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
+            binding.nativeViewDrop.removeAllViews()
+            binding.nativeViewDrop.addView(nativeAdLayoutBinding.root)
+            binding.nativeViewDrop.visibility = View.VISIBLE
+            binding.dropLayout.visibility = View.VISIBLE
+
+            binding.btnDropDown.setOnClickListener {
+                binding.dropLayout.visibility = View.GONE
+            }
+            binding.btnDropUp.visibility = View.INVISIBLE
         }
     }
+
 
     fun showNatAd(): Boolean {
         return remoteConfig.nativeAd

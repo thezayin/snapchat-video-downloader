@@ -2,7 +2,6 @@ package com.bluelock.snapchatdownloader.ui.presentation.download
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -47,7 +46,6 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
         FragmentDownloadedBinding::inflate
 
 
-
     @Inject
     lateinit var googleManager: GoogleManager
 
@@ -68,9 +66,10 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
         initRecyclerView()
 
         lifecycleScope.launch(Dispatchers.Main) { refreshFiles() }
-        showRecursiveAds()
+
         if (remoteConfig.nativeAd) {
-            showDropDown()
+            showRecursiveAds()
+            showNativeAd()
         }
         initView()
     }
@@ -78,19 +77,14 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     private fun initView() {
         binding.apply {
             btnBack.setOnClickListener {
-                showInterstitialAd {}
-                    findNavController().navigateUp()
+                findNavController().navigateUp()
 
             }
         }
     }
 
-
-
     private fun initRecyclerView() {
-
         myAdapter = MyAdapter(fileList, this@DownloadedFragment)
-
         binding.downloaded.apply {
             setHasFixedSize(true)
             layoutManager =
@@ -116,12 +110,10 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
         withContext(Dispatchers.Main) {
             myAdapter.notifyDataSetChanged()
         }
-
     }
 
-
     override fun onItemClicked(file: File) {
-        showRewardedAd {}
+        showRewardedAd {
             val uri =
                 FileProvider.getUriForFile(
                     requireActivity(),
@@ -136,28 +128,23 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
                 startActivity(this)
             }
 
+        }
     }
 
     private fun showNativeAd() {
-        if (remoteConfig.nativeAd) {
-            nativeAd = googleManager.createNativeAdSmall()
-            nativeAd?.let {
-                val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
-                nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
-                binding.nativeView.removeAllViews()
-                binding.nativeView.addView(nativeAdLayoutBinding.root)
-                binding.nativeView.visibility = View.VISIBLE
-            }
+        nativeAd = googleManager.createNativeAdSmall()
+        nativeAd?.let {
+            val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
+            nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)
+            binding.nativeView.removeAllViews()
+            binding.nativeView.addView(nativeAdLayoutBinding.root)
+            binding.nativeView.visibility = View.VISIBLE
         }
     }
 
     private fun showDropDown() {
         val nativeAdCheck = googleManager.createNativeFull()
-        val nativeAd = googleManager.createNativeFull()
-        Log.d("ggg_nul", "nativeAd:${nativeAdCheck}")
-
         nativeAdCheck?.let {
-            Log.d("ggg_lest", "nativeAdEx:${nativeAd}")
             binding.apply {
                 dropLayout.bringToFront()
                 nativeViewDrop.bringToFront()
@@ -168,10 +155,8 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
             binding.nativeViewDrop.addView(nativeAdLayoutBinding.root)
             binding.nativeViewDrop.visibility = View.VISIBLE
             binding.dropLayout.visibility = View.VISIBLE
-
             binding.btnDropDown.setOnClickListener {
-                showInterstitialAd {}
-                    binding.dropLayout.visibility = View.GONE
+                binding.dropLayout.visibility = View.GONE
 
             }
             binding.btnDropUp.visibility = View.INVISIBLE
@@ -205,9 +190,9 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
             callback.invoke()
         }
     }
+
     private fun showRewardedAd(callback: () -> Unit) {
         if (remoteConfig.showInterstitial) {
-
             if (!requireActivity().isConnected()) {
                 callback.invoke()
                 return
@@ -234,14 +219,14 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
             callback.invoke()
         }
     }
+
     private fun showRecursiveAds() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (this.isActive) {
                     showNativeAd()
-                    if (remoteConfig.nativeAd) {
-                        showNativeAd()
-                    }
+                    showInterstitialAd { }
+                    showDropDown()
                     delay(30000L)
                 }
             }
