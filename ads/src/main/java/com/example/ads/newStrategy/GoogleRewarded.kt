@@ -24,6 +24,15 @@ class GoogleRewarded(context: Context?) {
 
     private fun instantiateList() {
         adUnits = ArrayList()
+
+//                val testId = "ca-app-pub-3940256099942544/5224354917"
+//
+//        adUnits!!.add(0, ArrayList(listOf(testId, Stack<RewardedAd>())))
+//        adUnits!!.add(1, ArrayList(listOf(testId, Stack<RewardedAd>())))
+//        adUnits!!.add(2, ArrayList(listOf(testId, Stack<RewardedAd>())))
+//        adUnits!!.add(3, ArrayList(listOf(testId, Stack<RewardedAd>())))
+//        adUnits!!.add(4, ArrayList(listOf(testId, Stack<RewardedAd>())))
+
         adUnits!!.add(0, ArrayList(listOf(reward5, Stack<RewardedAd>())))
         adUnits!!.add(1, ArrayList(listOf(reward4, Stack<RewardedAd>())))
         adUnits!!.add(2, ArrayList(listOf(rewardHigh, Stack<RewardedAd>())))

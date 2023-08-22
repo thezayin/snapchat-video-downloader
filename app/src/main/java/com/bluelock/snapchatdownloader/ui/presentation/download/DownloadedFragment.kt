@@ -18,6 +18,7 @@ import com.bluelock.snapchatdownloader.interfaces.ItemClickListener
 import com.bluelock.snapchatdownloader.remote.RemoteConfig
 import com.bluelock.snapchatdownloader.ui.presentation.base.BaseFragment
 import com.bluelock.snapchatdownloader.util.Utils
+import com.bluelock.snapchatdownloader.util.isConnected
 import com.example.ads.GoogleManager
 import com.example.ads.databinding.MediumNativeAdLayoutBinding
 import com.example.ads.databinding.NativeAdBannerLayoutBinding
@@ -29,6 +30,7 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.rewarded.RewardedAd
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -119,7 +121,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
 
     override fun onItemClicked(file: File) {
-        showInterstitialAd {}
+        showRewardedAd {}
             val uri =
                 FileProvider.getUriForFile(
                     requireActivity(),
@@ -179,7 +181,6 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     private fun showInterstitialAd(callback: () -> Unit) {
         if (remoteConfig.showInterstitial) {
-            Log.d("remoteconfig_inter",remoteConfig.showInterstitial.toString())
             val ad: InterstitialAd? =
                 googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 
@@ -204,7 +205,35 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
             callback.invoke()
         }
     }
+    private fun showRewardedAd(callback: () -> Unit) {
+        if (remoteConfig.showInterstitial) {
 
+            if (!requireActivity().isConnected()) {
+                callback.invoke()
+                return
+            }
+            val ad: RewardedAd? =
+                googleManager.createRewardedAd()
+
+            if (ad == null) {
+                callback.invoke()
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
+                        callback.invoke()
+                    }
+                }
+
+                ad.show(requireActivity()) {
+                    callback.invoke()
+                }
+            }
+        } else {
+            callback.invoke()
+        }
+    }
     private fun showRecursiveAds() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -214,14 +243,8 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
                         showNativeAd()
                     }
                     delay(30000L)
-                    showInterstitialAd {  }
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        showInterstitialAd { }
     }
 }

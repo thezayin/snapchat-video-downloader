@@ -10,14 +10,14 @@ plugins {
 
 android {
     namespace 'com.bluelock.snapchatdownloader'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.bluelock.snapchatdownloader"
         minSdk 24
-        targetSdk 33
-        versionCode 2
-        versionName "1.0.1"
+        targetSdk 34
+        versionCode 5
+        versionName "1.0.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -129,4 +129,7 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-vision:20.1.3'
     implementation 'com.google.firebase:firebase-analytics:21.3.0'
+
+    //Animation Api
+    implementation 'com.airbnb.android:lottie:6.0.0'
 }
